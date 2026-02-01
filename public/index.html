@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FitCoach — AI Weight Loss Programs</title>
+  <meta name="description" content="Get a personalized 12-week weight loss program designed by AI">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◆</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">◆ FitCoach</div>
+      <p class="tagline">AI-powered weight loss programs</p>
+    </header>
+
+    <!-- Landing -->
+    <section id="landing" class="section active">
+      <div class="hero">
+        <h1>Your 12-week program,<br>built in 60 seconds</h1>
+        <p class="hero-sub">Answer a few questions. Get a complete cardio plan, nutrition targets, and adherence strategies—personalized to your body and goals.</p>
+        <button class="btn btn-primary" onclick="startForm()">Get Started</button>
+      </div>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">○</div>
+          <div class="feature-text">
+            <strong>Science-based</strong>
+            <span>Mifflin-St Jeor calculations, sustainable deficits</span>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">○</div>
+          <div class="feature-text">
+            <strong>Progressive</strong>
+            <span>12 weeks of structured cardio progression</span>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">○</div>
+          <div class="feature-text">
+            <strong>Realistic</strong>
+            <span>Built for adherence, not just results</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Form -->
+    <section id="form-section" class="section">
+      <div class="form-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress"></div>
+        </div>
+        <div class="step-indicator">
+          <span id="step-label">Step 1 of 4</span>
+        </div>
+
+        <!-- Step 1: Body Stats -->
+        <div class="form-step active" id="step-1">
+          <h2>Body Stats</h2>
+          <p class="step-desc">Basic measurements for accurate calculations</p>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Age</label>
+              <input type="number" id="age" placeholder="30" min="16" max="80">
+            </div>
+            <div class="form-group">
+              <label>Sex</label>
+              <select id="sex">
+                <option value="">Select</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Height (cm)</label>
+              <input type="number" id="height" placeholder="175" min="140" max="220">
+            </div>
+            <div class="form-group">
+              <label>Current Weight (kg)</label>
+              <input type="number" id="weight" placeholder="85" min="40" max="250" step="0.1">
+            </div>
+            <div class="form-group">
+              <label>Target Weight (kg)</label>
+              <input type="number" id="targetWeight" placeholder="75" min="40" max="250" step="0.1">
+            </div>
+            <div class="form-group">
+              <label>Timeframe (weeks)</label>
+              <input type="number" id="weeks" value="12" min="4" max="24">
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Fitness Level -->
+        <div class="form-step" id="step-2">
+          <h2>Fitness Level</h2>
+          <p class="step-desc">Current experience and activity</p>
+          
+          <div class="form-group">
+            <label>Training Level</label>
+            <div class="radio-group">
+              <label class="radio-card">
+                <input type="radio" name="trainingLevel" value="beginner">
+                <div class="radio-content">
+                  <strong>Beginner</strong>
+                  <span>New to structured exercise</span>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="trainingLevel" value="intermediate">
+                <div class="radio-content">
+                  <strong>Intermediate</strong>
+                  <span>6+ months consistent training</span>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="trainingLevel" value="advanced">
+                <div class="radio-content">
+                  <strong>Advanced</strong>
+                  <span>Years of experience</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Daily Activity Level</label>
+            <select id="activityLevel">
+              <option value="">Select</option>
+              <option value="sedentary">Sedentary (desk job, minimal movement)</option>
+              <option value="light">Light (some walking, light activity)</option>
+              <option value="moderate">Moderate (active job or regular exercise)</option>
+              <option value="active">Active (physical job + exercise)</option>
+              <option value="very_active">Very Active (athlete level)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Cardio Experience</label>
+            <select id="cardioExperience">
+              <option value="">Select</option>
+              <option value="none">None (rarely do cardio)</option>
+              <option value="some">Some (occasional walks/runs)</option>
+              <option value="experienced">Experienced (regular cardio)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Step 3: Logistics -->
+        <div class="form-step" id="step-3">
+          <h2>Logistics</h2>
+          <p class="step-desc">What you have access to</p>
+          
+          <div class="form-group">
+            <label>Available Cardio (select all that apply)</label>
+            <div class="checkbox-group">
+              <label class="checkbox-card">
+                <input type="checkbox" name="cardio" value="walking">
+                <span>Walking</span>
+              </label>
+              <label class="checkbox-card">
+                <input type="checkbox" name="cardio" value="running">
+                <span>Running</span>
+              </label>
+              <label class="checkbox-card">
+                <input type="checkbox" name="cardio" value="stationary_bike">
+                <span>Stationary Bike</span>
+              </label>
+              <label class="checkbox-card">
+                <input type="checkbox" name="cardio" value="outdoor_cycling">
+                <span>Outdoor Cycling</span>
+              </label>
+              <label class="checkbox-card">
+                <input type="checkbox" name="cardio" value="swimming">
+                <span>Swimming</span>
+              </label>
+              <label class="checkbox-card">
+                <input type="checkbox" name="cardio" value="elliptical">
+                <span>Elliptical</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Gym Access</label>
+              <select id="gymAccess">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Days per Week</label>
+              <input type="number" id="daysPerWeek" value="4" min="2" max="7">
+            </div>
+            <div class="form-group">
+              <label>Minutes per Session</label>
+              <input type="number" id="minutesPerSession" value="45" min="15" max="120">
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Constraints -->
+        <div class="form-step" id="step-4">
+          <h2>Constraints</h2>
+          <p class="step-desc">Anything we should know about (optional)</p>
+          
+          <div class="form-group">
+            <label>Injuries or Physical Limitations</label>
+            <textarea id="injuries" placeholder="e.g., bad knee, lower back issues..."></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Medical Considerations</label>
+            <textarea id="medical" placeholder="e.g., diabetes, heart condition..."></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Dietary Constraints or Preferences</label>
+            <textarea id="dietary" placeholder="e.g., vegetarian, allergies, intermittent fasting..."></textarea>
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="form-nav">
+          <button class="btn btn-secondary" id="backBtn" onclick="prevStep()">Back</button>
+          <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">Continue</button>
+        </div>
+
+        <div class="form-error" id="formError"></div>
+      </div>
+    </section>
+
+    <!-- Loading -->
+    <section id="loading-section" class="section">
+      <div class="loading-container">
+        <div class="loader"></div>
+        <h2>Building your program</h2>
+        <p class="loading-sub">Calculating targets and generating your personalized 12-week plan...</p>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section id="results-section" class="section">
+      <div class="results-container">
+        <div class="results-header">
+          <h1>Your Program</h1>
+          <div class="results-actions">
+            <button class="btn btn-secondary" onclick="copyProgram()">Copy</button>
+            <button class="btn btn-secondary" onclick="window.print()">Print</button>
+            <button class="btn btn-primary" onclick="startOver()">Start Over</button>
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <!-- Warning -->
+        <div class="warning-box" id="warningBox"></div>
+
+        <!-- Program Content -->
+        <div class="program-content" id="programContent"></div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Not medical advice. Consult a professional before starting any program.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
