@@ -1,4 +1,11 @@
 // Access control
+let accessTurnstileToken = null;
+
+function onAccessTurnstileSuccess(token) {
+  accessTurnstileToken = token;
+}
+window.onAccessTurnstileSuccess = onAccessTurnstileSuccess;
+
 async function checkAccess() {
   const code = document.getElementById('accessCode').value.trim();
   const errorEl = document.getElementById('accessError');
@@ -8,11 +15,16 @@ async function checkAccess() {
     return;
   }
   
+  if (!accessTurnstileToken) {
+    errorEl.textContent = 'Please complete the verification';
+    return;
+  }
+  
   try {
     const response = await fetch('/api/verify-access', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, turnstileToken: accessTurnstileToken }),
     });
     
     const data = await response.json();

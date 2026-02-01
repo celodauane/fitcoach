@@ -89,12 +89,27 @@ export default {
     
     // Access code verification
     if (url.pathname === '/api/verify-access' && request.method === 'POST') {
+      // Rate limit this endpoint more strictly
+      const rateLimit = checkRateLimit(clientIP);
+      if (!rateLimit.allowed) {
+        logEvent('rate_limited_access', { ip: clientIP });
+        return addSecurityHeaders(jsonResponse({ valid: false, error: 'Too many attempts' }, 429));
+      }
+      
       try {
-        const { code } = await request.json() as { code?: string };
-        const validCode = env.ACCESS_CODE || 'fitcoach2024'; // Default if not set
+        const body = await request.json() as { code?: string; turnstileToken?: string };
         
-        // Constant-time comparison to prevent timing attacks
-        const valid = code === validCode;
+        // Verify Turnstile first
+        if (env.TURNSTILE_ENABLED === 'true' && env.TURNSTILE_SECRET) {
+          const verified = await verifyTurnstile(body.turnstileToken || '', env.TURNSTILE_SECRET, clientIP);
+          if (!verified) {
+            logEvent('turnstile_failed_access', { ip: clientIP });
+            return addSecurityHeaders(jsonResponse({ valid: false, error: 'Verification failed' }, 403));
+          }
+        }
+        
+        const validCode = env.ACCESS_CODE || 'fitcoach2024';
+        const valid = body.code === validCode;
         
         if (!valid) {
           logEvent('invalid_access_code', { ip: clientIP });
