@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FitCoach — AI Weight Loss Programs</title>
-  <meta name="description" content="Get a personalized 12-week weight loss program designed by AI">
+  <title>Sunday — AI Fit Coach</title>
+  <meta name="description" content="Meet Sunday. Your AI coach for personalized 12-week weight loss programs.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◆</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -15,15 +15,28 @@
   <div class="container">
     <!-- Header -->
     <header class="header">
-      <div class="logo">◆ FitCoach</div>
-      <p class="tagline">AI-powered weight loss programs</p>
+      <div class="logo">☀ Sunday</div>
+      <p class="tagline">Your AI fit coach</p>
     </header>
 
+    <!-- Access Gate -->
+    <section id="access-gate" class="section active">
+      <div class="gate-container">
+        <h2>Access Code Required</h2>
+        <p class="step-desc">Enter the access code to continue</p>
+        <div class="form-group">
+          <input type="password" id="accessCode" placeholder="Enter code" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" onclick="checkAccess()">Continue</button>
+        <div class="form-error" id="accessError"></div>
+      </div>
+    </section>
+
     <!-- Landing -->
-    <section id="landing" class="section active">
+    <section id="landing" class="section">
       <div class="hero">
-        <h1>Your 12-week program,<br>built in 60 seconds</h1>
-        <p class="hero-sub">Answer a few questions. Get a complete cardio plan, nutrition targets, and adherence strategies—personalized to your body and goals.</p>
+        <h1>Meet Sunday,<br>your AI fit coach</h1>
+        <p class="hero-sub">Answer a few questions. Get a complete 12-week program—cardio, nutrition, and adherence strategies—built for your body and goals.</p>
         <button class="btn btn-primary" onclick="startForm()">Get Started</button>
       </div>
       <div class="features">
@@ -283,7 +296,7 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <p>Not medical advice. Consult a professional before starting any program.</p>
+      <p>Sunday is not a medical professional. Consult a doctor before starting any program.</p>
     </footer>
   </div>
 

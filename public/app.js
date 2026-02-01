@@ -1,3 +1,48 @@
+// Access control
+async function checkAccess() {
+  const code = document.getElementById('accessCode').value.trim();
+  const errorEl = document.getElementById('accessError');
+  
+  if (!code) {
+    errorEl.textContent = 'Please enter an access code';
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/verify-access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    
+    const data = await response.json();
+    
+    if (data.valid) {
+      sessionStorage.setItem('access_granted', 'true');
+      document.getElementById('access-gate').classList.remove('active');
+      document.getElementById('landing').classList.add('active');
+      errorEl.textContent = '';
+    } else {
+      errorEl.textContent = 'Invalid access code';
+    }
+  } catch {
+    errorEl.textContent = 'Error verifying code';
+  }
+}
+
+// Check if already authenticated
+if (sessionStorage.getItem('access_granted') === 'true') {
+  document.getElementById('access-gate')?.classList.remove('active');
+  document.getElementById('landing')?.classList.add('active');
+}
+
+// Allow Enter key on access code input
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('accessCode')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') checkAccess();
+  });
+});
+
 // State
 let currentStep = 1;
 const totalSteps = 4;
@@ -242,7 +287,7 @@ function parseMarkdown(text) {
 function copyProgram() {
   const content = document.getElementById('programContent').innerText;
   const stats = document.getElementById('statsGrid').innerText;
-  navigator.clipboard.writeText(`FitCoach Program\n\n${stats}\n\n${content}`).then(() => {
+  navigator.clipboard.writeText(`Sunday - Your Program\n\n${stats}\n\n${content}`).then(() => {
     const btn = document.querySelector('.results-actions .btn-secondary');
     const original = btn.textContent;
     btn.textContent = 'Copied!';

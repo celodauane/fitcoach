@@ -13,6 +13,7 @@ interface Env {
   AI: Ai;
   TURNSTILE_SECRET?: string;
   TURNSTILE_ENABLED: string;
+  ACCESS_CODE?: string;
 }
 
 // Simple in-memory rate limiting (resets on worker restart)
@@ -84,6 +85,25 @@ export default {
           'Access-Control-Max-Age': '86400',
         },
       }));
+    }
+    
+    // Access code verification
+    if (url.pathname === '/api/verify-access' && request.method === 'POST') {
+      try {
+        const { code } = await request.json() as { code?: string };
+        const validCode = env.ACCESS_CODE || 'fitcoach2024'; // Default if not set
+        
+        // Constant-time comparison to prevent timing attacks
+        const valid = code === validCode;
+        
+        if (!valid) {
+          logEvent('invalid_access_code', { ip: clientIP });
+        }
+        
+        return addSecurityHeaders(jsonResponse({ valid }));
+      } catch {
+        return addSecurityHeaders(jsonResponse({ valid: false }));
+      }
     }
     
     // API endpoint

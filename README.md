@@ -1,6 +1,6 @@
-# FitCoach
+# Sunday
 
-AI-powered 12-week weight loss program generator.
+Your AI fit coach. Personalized 12-week weight loss programs.
 
 ## Features
 
