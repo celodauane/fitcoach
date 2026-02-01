@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
   <div class="container">
@@ -224,6 +225,17 @@
           <div class="form-group">
             <label>Dietary Constraints or Preferences</label>
             <textarea id="dietary" placeholder="e.g., vegetarian, allergies, intermittent fasting..."></textarea>
+          </div>
+          
+          <!-- Honeypot - hidden from humans, bots will fill it -->
+          <div class="form-group" style="position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden;" aria-hidden="true">
+            <label>Leave this empty</label>
+            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+          </div>
+          
+          <!-- Turnstile widget -->
+          <div class="form-group turnstile-container">
+            <div class="cf-turnstile" data-sitekey="TURNSTILE_SITE_KEY" data-callback="onTurnstileSuccess" data-theme="dark"></div>
           </div>
         </div>
 

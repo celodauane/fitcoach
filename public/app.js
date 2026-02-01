@@ -1,6 +1,15 @@
 // State
 let currentStep = 1;
 const totalSteps = 4;
+let turnstileToken = null;
+
+// Turnstile callback
+function onTurnstileSuccess(token) {
+  turnstileToken = token;
+}
+
+// Make it global for Turnstile
+window.onTurnstileSuccess = onTurnstileSuccess;
 
 // Elements
 const sections = {
@@ -138,6 +147,9 @@ async function submitForm() {
     injuries: document.getElementById('injuries').value.trim(),
     medical: document.getElementById('medical').value.trim(),
     dietary: document.getElementById('dietary').value.trim(),
+    // Security
+    _hp: document.getElementById('website').value, // Honeypot
+    turnstileToken: turnstileToken, // Turnstile
   };
   
   try {

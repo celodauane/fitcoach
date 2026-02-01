@@ -2,14 +2,44 @@ import { calculate, formatInputsForPrompt, UserInputs } from './calculate';
 import { SYSTEM_PROMPT } from './prompt';
 import { 
   SECURITY_HEADERS, 
-  checkRateLimit, 
   validateRequest, 
   sanitizeInputs,
-  cleanupRateLimits 
+  verifyTurnstile,
+  checkHoneypot,
+  detectSuspicious,
 } from './security';
 
 interface Env {
   AI: Ai;
+  TURNSTILE_SECRET?: string;
+  TURNSTILE_ENABLED: string;
+}
+
+// Simple in-memory rate limiting (resets on worker restart)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 10;
+const RATE_WINDOW = 60 * 1000;
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; retryAfter: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  
+  if (!record || now > record.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW });
+    return { allowed: true, remaining: RATE_LIMIT - 1, retryAfter: 0 };
+  }
+  
+  if (record.count >= RATE_LIMIT) {
+    return { allowed: false, remaining: 0, retryAfter: Math.ceil((record.resetAt - now) / 1000) };
+  }
+  
+  record.count++;
+  return { allowed: true, remaining: RATE_LIMIT - record.count, retryAfter: 0 };
+}
+
+// Simple logging (to console, could be extended to external service)
+function logEvent(event: string, data: Record<string, unknown> = {}) {
+  console.log(JSON.stringify({ timestamp: new Date().toISOString(), event, ...data }));
 }
 
 function addSecurityHeaders(response: Response): Response {
@@ -39,8 +69,10 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     
-    // Periodic cleanup
-    if (Math.random() < 0.01) cleanupRateLimits();
+    // Get client IP
+    const clientIP = request.headers.get('cf-connecting-ip') || 
+                     request.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     'unknown';
     
     // CORS preflight
     if (request.method === 'OPTIONS') {
@@ -56,18 +88,18 @@ export default {
     
     // API endpoint
     if (url.pathname === '/api/generate' && request.method === 'POST') {
-      // Get client IP
-      const clientIP = request.headers.get('cf-connecting-ip') || 
-                       request.headers.get('x-forwarded-for')?.split(',')[0] || 
-                       'unknown';
       
       // Rate limiting
-      const { allowed, remaining } = checkRateLimit(clientIP);
-      if (!allowed) {
+      const rateLimit = checkRateLimit(clientIP);
+      if (!rateLimit.allowed) {
+        logEvent('rate_limited', { ip: clientIP });
         return addSecurityHeaders(jsonResponse(
           { error: 'Too many requests. Please wait a minute.' },
           429,
-          { 'Retry-After': '60', 'X-RateLimit-Remaining': '0' }
+          { 
+            'Retry-After': String(rateLimit.retryAfter), 
+            'X-RateLimit-Remaining': '0' 
+          }
         ));
       }
       
@@ -78,7 +110,7 @@ export default {
       }
       
       try {
-        // Parse and sanitize inputs
+        // Parse body
         let rawInputs: Record<string, unknown>;
         try {
           rawInputs = await request.json();
@@ -86,9 +118,38 @@ export default {
           return addSecurityHeaders(jsonResponse({ error: 'Invalid JSON' }, 400));
         }
         
+        // Honeypot check
+        if (!checkHoneypot(rawInputs._hp)) {
+          logEvent('honeypot_triggered', { ip: clientIP });
+          // Return fake success to confuse bots
+          return addSecurityHeaders(jsonResponse({ success: true, program: 'Generated.' }));
+        }
+        
+        // Detect suspicious patterns
+        const suspicious = detectSuspicious(request, rawInputs);
+        if (suspicious) {
+          logEvent(suspicious, { ip: clientIP, sample: JSON.stringify(rawInputs).slice(0, 100) });
+          return addSecurityHeaders(jsonResponse({ error: 'Invalid request' }, 400));
+        }
+        
+        // Turnstile verification
+        if (env.TURNSTILE_ENABLED === 'true' && env.TURNSTILE_SECRET) {
+          const turnstileToken = rawInputs.turnstileToken as string;
+          const verified = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET, clientIP);
+          
+          if (!verified) {
+            logEvent('turnstile_failed', { ip: clientIP });
+            return addSecurityHeaders(jsonResponse(
+              { error: 'Verification failed. Please refresh and try again.' }, 
+              403
+            ));
+          }
+        }
+        
+        // Sanitize inputs
         const inputs = sanitizeInputs(rawInputs) as unknown as UserInputs;
         
-        // Additional validation
+        // Validation
         if (inputs.targetWeight >= inputs.weight) {
           return addSecurityHeaders(jsonResponse(
             { error: 'Target weight must be less than current weight' }, 
@@ -118,14 +179,17 @@ export default {
         
         const program = (response as { response: string }).response;
         
+        logEvent('program_generated', { ip: clientIP });
+        
         return addSecurityHeaders(jsonResponse({
           success: true,
           calculations: calcs,
           program,
-        }, 200, { 'X-RateLimit-Remaining': String(remaining) }));
+        }, 200, { 'X-RateLimit-Remaining': String(rateLimit.remaining) }));
         
       } catch (error) {
         console.error('Error:', error);
+        logEvent('error', { ip: clientIP, message: error instanceof Error ? error.message : 'Unknown' });
         return addSecurityHeaders(jsonResponse(
           { error: 'An error occurred. Please try again.' }, 
           500
@@ -133,8 +197,6 @@ export default {
       }
     }
     
-    // For static assets, just add security headers
-    // (Cloudflare will serve from /public automatically)
     return addSecurityHeaders(new Response('Not found', { status: 404 }));
   },
 };

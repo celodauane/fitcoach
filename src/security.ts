@@ -2,11 +2,12 @@
 export const SECURITY_HEADERS = {
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'", // needed for inline handlers, can remove if refactored
+    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data:",
     "connect-src 'self'",
+    "frame-src https://challenges.cloudflare.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -18,26 +19,31 @@ export const SECURITY_HEADERS = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 };
 
-// Rate limiting (simple in-memory, resets on worker restart)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 10; // requests per window
-const RATE_WINDOW = 60 * 1000; // 1 minute
+// Turnstile verification
+export async function verifyTurnstile(token: string, secret: string, ip: string): Promise<boolean> {
+  if (!token || !secret) return false;
+  
+  try {
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        secret,
+        response: token,
+        remoteip: ip,
+      }),
+    });
+    
+    const result = await response.json() as { success: boolean };
+    return result.success === true;
+  } catch {
+    return false;
+  }
+}
 
-export function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-  
-  if (!record || now > record.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW });
-    return { allowed: true, remaining: RATE_LIMIT - 1 };
-  }
-  
-  if (record.count >= RATE_LIMIT) {
-    return { allowed: false, remaining: 0 };
-  }
-  
-  record.count++;
-  return { allowed: true, remaining: RATE_LIMIT - record.count };
+// Honeypot check - if this field has a value, it's a bot
+export function checkHoneypot(value: unknown): boolean {
+  return !value || (typeof value === 'string' && value.trim() === '');
 }
 
 // Input sanitization
@@ -45,7 +51,7 @@ export function sanitizeString(input: unknown, maxLength = 500): string {
   if (typeof input !== 'string') return '';
   return input
     .slice(0, maxLength)
-    .replace(/[<>]/g, '') // Remove potential HTML
+    .replace(/[<>]/g, '')
     .trim();
 }
 
@@ -57,7 +63,6 @@ export function sanitizeNumber(input: unknown, min: number, max: number, fallbac
 
 // Validate request
 export function validateRequest(request: Request): { valid: boolean; error?: string } {
-  // Check content type for POST
   if (request.method === 'POST') {
     const contentType = request.headers.get('content-type');
     if (!contentType?.includes('application/json')) {
@@ -65,7 +70,6 @@ export function validateRequest(request: Request): { valid: boolean; error?: str
     }
   }
   
-  // Check content length (max 10KB)
   const contentLength = request.headers.get('content-length');
   if (contentLength && parseInt(contentLength) > 10240) {
     return { valid: false, error: 'Request too large' };
@@ -103,12 +107,28 @@ export function sanitizeInputs(raw: Record<string, unknown>): Record<string, unk
   };
 }
 
-// Clean up old rate limit entries periodically
-export function cleanupRateLimits() {
-  const now = Date.now();
-  for (const [ip, record] of rateLimitMap) {
-    if (now > record.resetAt) {
-      rateLimitMap.delete(ip);
-    }
+// Detect suspicious patterns
+export function detectSuspicious(request: Request, body: Record<string, unknown>): string | null {
+  const ua = request.headers.get('user-agent') || '';
+  
+  // No user agent (some bots)
+  if (!ua) return 'missing_user_agent';
+  
+  // Common bot patterns (but allow legitimate ones)
+  if (/curl|wget|python-requests|go-http-client/i.test(ua)) {
+    return 'bot_user_agent';
   }
+  
+  // Suspicious input patterns (XSS attempts)
+  const allInputs = JSON.stringify(body).toLowerCase();
+  if (/<script|javascript:|on\w+\s*=/i.test(allInputs)) {
+    return 'xss_attempt';
+  }
+  
+  // SQL injection patterns
+  if (/union\s+select|drop\s+table|insert\s+into|;\s*delete/i.test(allInputs)) {
+    return 'sql_injection_attempt';
+  }
+  
+  return null;
 }
