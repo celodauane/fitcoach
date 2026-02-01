@@ -28,15 +28,15 @@ Brief summary: goal, approach, expected weekly loss rate.
 State the provided numbers. Explain briefly why these work.
 
 ## 12-Week Cardio Plan
-Week-by-week breakdown. For each week state:
-- Days and modality
-- Duration and intensity
-- One coaching note
+Week-by-week breakdown. Use this EXACT format for each week block:
 
-Use a clear format like:
-**Week 1-2**: [details]
-**Week 3-4**: [details]
-etc.
+**Week 1-2**: Foundation Phase
+3 sessions per week. Walking 30 min at RPE 3-4. Focus on building the habit. Keep it easy.
+
+**Week 3-4**: Building Base
+[continue pattern...]
+
+Make each week block self-contained with: phase name, frequency, duration, intensity (RPE or HR zone), and a brief coaching tip.
 
 ## Nutrition Rules
 5-7 clear, actionable principles.

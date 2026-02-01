@@ -220,7 +220,7 @@ async function submitForm() {
 
 // Display Results
 function displayResults(calcs, program) {
-  // Stats
+  // Stats - enhanced with more info
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card">
       <div class="stat-value">${calcs.dailyCalories}</div>
@@ -231,14 +231,28 @@ function displayResults(calcs, program) {
       <div class="stat-label">Protein</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">${calcs.deficit}</div>
-      <div class="stat-label">Deficit (kcal)</div>
+      <div class="stat-value">${calcs.carbs}g</div>
+      <div class="stat-label">Carbs</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">${calcs.weeklyLoss.toFixed(1)}kg</div>
-      <div class="stat-label">Weekly Loss</div>
+      <div class="stat-value">${calcs.fat}g</div>
+      <div class="stat-label">Fat</div>
     </div>
   `;
+  
+  // Add macro breakdown below stats
+  const macroBreakdown = `
+    <div class="info-box" style="margin-top: 16px;">
+      <div class="info-box-title">Your Numbers</div>
+      <div class="info-box-content">
+        <strong>TDEE:</strong> ${calcs.tdee} kcal/day → 
+        <strong>Target:</strong> ${calcs.dailyCalories} kcal/day 
+        (${calcs.deficitPercent}% deficit) → 
+        <strong>Expected:</strong> ~${calcs.weeklyLoss.toFixed(2)} kg/week
+      </div>
+    </div>
+  `;
+  document.getElementById('statsGrid').insertAdjacentHTML('afterend', macroBreakdown);
   
   // Warning
   const warningBox = document.getElementById('warningBox');
@@ -262,25 +276,75 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Simple Markdown Parser (with XSS protection)
+// Enhanced Markdown Parser (with XSS protection)
 function parseMarkdown(text) {
   // First escape HTML to prevent XSS
-  const escaped = escapeHtml(text);
+  let html = escapeHtml(text);
   
-  return escaped
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^\* (.+)$/gm, '<li>$1</li>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
-    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[hup])/gm, '<p>')
-    .replace(/(?<![>])$/gm, '</p>')
-    .replace(/<p><\/p>/g, '')
-    .replace(/<p>(<[hul])/g, '$1')
-    .replace(/(<\/[hul][^>]*>)<\/p>/g, '$1');
+  // Headers
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  
+  // Week cards - detect "Week X" or "Week X-Y" patterns
+  html = html.replace(/\*\*Week\s*(\d+(?:-\d+)?)\*\*:?\s*([^\n]+)(?:\n([^*\n](?:[^\n]*\n?)*))?/gi, 
+    (match, week, title, content) => {
+      const cleanContent = content ? content.trim().replace(/\n/g, '<br>') : '';
+      return `<div class="week-card">
+        <div class="week-card-header">Week ${week}: ${title}</div>
+        ${cleanContent ? `<div class="week-card-content">${cleanContent}</div>` : ''}
+      </div>`;
+    });
+  
+  // Lists
+  html = html.replace(/^[\*\-]\s+(.+)$/gm, '<li>$1</li>');
+  html = html.replace(/^(\d+)\.\s+(.+)$/gm, '<li>$2</li>');
+  
+  // Wrap consecutive list items
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+  
+  // Paragraphs - wrap text blocks
+  const lines = html.split('\n');
+  let result = [];
+  let inParagraph = false;
+  
+  for (let line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (inParagraph) {
+        result.push('</p>');
+        inParagraph = false;
+      }
+      continue;
+    }
+    
+    // Skip if already wrapped in HTML tags
+    if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || 
+        trimmed.startsWith('<div') || trimmed.startsWith('<table') ||
+        trimmed.startsWith('</')) {
+      if (inParagraph) {
+        result.push('</p>');
+        inParagraph = false;
+      }
+      result.push(line);
+      continue;
+    }
+    
+    if (!inParagraph) {
+      result.push('<p>' + line);
+      inParagraph = true;
+    } else {
+      result.push('<br>' + line);
+    }
+  }
+  
+  if (inParagraph) {
+    result.push('</p>');
+  }
+  
+  return result.join('\n');
 }
 
 // Copy

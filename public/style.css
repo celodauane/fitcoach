@@ -465,9 +465,20 @@ body {
 .program-content h2 {
   font-size: 1.25rem;
   font-weight: 600;
-  margin: 32px 0 16px;
-  padding-top: 24px;
+  margin: 40px 0 20px;
+  padding: 16px 0;
   border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.program-content h2::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  background: var(--text);
+  border-radius: 2px;
 }
 
 .program-content h2:first-child {
@@ -476,24 +487,150 @@ body {
   border-top: none;
 }
 
+.program-content h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 24px 0 12px;
+  color: var(--text-secondary);
+}
+
 .program-content p {
   color: var(--text-secondary);
   margin-bottom: 12px;
+  line-height: 1.7;
 }
 
 .program-content ul,
 .program-content ol {
   color: var(--text-secondary);
-  margin-left: 20px;
-  margin-bottom: 16px;
+  margin-left: 0;
+  margin-bottom: 20px;
+  list-style: none;
 }
 
 .program-content li {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  padding-left: 20px;
+  position: relative;
+}
+
+.program-content li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--text-muted);
 }
 
 .program-content strong {
   color: var(--text);
+}
+
+/* Week Cards */
+.week-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.week-card-header {
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.week-card-header::before {
+  content: '◆';
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.week-card-content {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* Tables */
+.program-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 0.9rem;
+}
+
+.program-content th {
+  text-align: left;
+  padding: 12px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.program-content td {
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.program-content tr:hover td {
+  background: var(--bg-hover);
+}
+
+/* Info Boxes */
+.info-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin: 20px 0;
+}
+
+.info-box-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.info-box-content {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Macro Pills */
+.macro-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.macro-pill {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+
+.macro-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.macro-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
 }
 
 /* Access Gate */
