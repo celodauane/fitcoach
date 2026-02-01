@@ -198,9 +198,19 @@ function displayResults(calcs, program) {
   showSection('results');
 }
 
-// Simple Markdown Parser
+// HTML escape for XSS prevention
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Simple Markdown Parser (with XSS protection)
 function parseMarkdown(text) {
-  return text
+  // First escape HTML to prevent XSS
+  const escaped = escapeHtml(text);
+  
+  return escaped
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')

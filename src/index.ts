@@ -1,37 +1,106 @@
 import { calculate, formatInputsForPrompt, UserInputs } from './calculate';
 import { SYSTEM_PROMPT } from './prompt';
+import { 
+  SECURITY_HEADERS, 
+  checkRateLimit, 
+  validateRequest, 
+  sanitizeInputs,
+  cleanupRateLimits 
+} from './security';
 
 interface Env {
   AI: Ai;
+}
+
+function addSecurityHeaders(response: Response): Response {
+  const newHeaders = new Headers(response.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    newHeaders.set(key, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: newHeaders,
+  });
+}
+
+function jsonResponse(data: object, status = 200, extraHeaders: Record<string, string> = {}): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      ...extraHeaders,
+    },
+  });
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     
-    // CORS
+    // Periodic cleanup
+    if (Math.random() < 0.01) cleanupRateLimits();
+    
+    // CORS preflight
     if (request.method === 'OPTIONS') {
-      return new Response(null, {
+      return addSecurityHeaders(new Response(null, {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Max-Age': '86400',
         },
-      });
+      }));
     }
     
     // API endpoint
     if (url.pathname === '/api/generate' && request.method === 'POST') {
+      // Get client IP
+      const clientIP = request.headers.get('cf-connecting-ip') || 
+                       request.headers.get('x-forwarded-for')?.split(',')[0] || 
+                       'unknown';
+      
+      // Rate limiting
+      const { allowed, remaining } = checkRateLimit(clientIP);
+      if (!allowed) {
+        return addSecurityHeaders(jsonResponse(
+          { error: 'Too many requests. Please wait a minute.' },
+          429,
+          { 'Retry-After': '60', 'X-RateLimit-Remaining': '0' }
+        ));
+      }
+      
+      // Validate request
+      const validation = validateRequest(request);
+      if (!validation.valid) {
+        return addSecurityHeaders(jsonResponse({ error: validation.error }, 400));
+      }
+      
       try {
-        const inputs = await request.json() as UserInputs;
+        // Parse and sanitize inputs
+        let rawInputs: Record<string, unknown>;
+        try {
+          rawInputs = await request.json();
+        } catch {
+          return addSecurityHeaders(jsonResponse({ error: 'Invalid JSON' }, 400));
+        }
         
-        // Validate required fields
-        const required = ['age', 'sex', 'height', 'weight', 'targetWeight', 'weeks', 
-                         'trainingLevel', 'activityLevel', 'cardioModalities', 'daysPerWeek', 'minutesPerSession'];
-        for (const field of required) {
-          if (!(field in inputs) || inputs[field as keyof UserInputs] === undefined) {
-            return Response.json({ error: `Missing required field: ${field}` }, { status: 400 });
-          }
+        const inputs = sanitizeInputs(rawInputs) as unknown as UserInputs;
+        
+        // Additional validation
+        if (inputs.targetWeight >= inputs.weight) {
+          return addSecurityHeaders(jsonResponse(
+            { error: 'Target weight must be less than current weight' }, 
+            400
+          ));
+        }
+        
+        if (inputs.cardioModalities.length === 0) {
+          return addSecurityHeaders(jsonResponse(
+            { error: 'At least one cardio modality required' }, 
+            400
+          ));
         }
         
         // Calculate
@@ -49,23 +118,23 @@ export default {
         
         const program = (response as { response: string }).response;
         
-        return Response.json({
+        return addSecurityHeaders(jsonResponse({
           success: true,
           calculations: calcs,
           program,
-        }, {
-          headers: { 'Access-Control-Allow-Origin': '*' },
-        });
+        }, 200, { 'X-RateLimit-Remaining': String(remaining) }));
         
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        return Response.json({ error: message }, { 
-          status: 500,
-          headers: { 'Access-Control-Allow-Origin': '*' },
-        });
+        console.error('Error:', error);
+        return addSecurityHeaders(jsonResponse(
+          { error: 'An error occurred. Please try again.' }, 
+          500
+        ));
       }
     }
     
-    return new Response('Not found', { status: 404 });
+    // For static assets, just add security headers
+    // (Cloudflare will serve from /public automatically)
+    return addSecurityHeaders(new Response('Not found', { status: 404 }));
   },
 };
